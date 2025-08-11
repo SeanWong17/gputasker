@@ -1,4 +1,4 @@
-# GPU Tasker
+# GPU Tasker (with DingTalk Notifier)
 
 轻量好用的GPU机群任务调度工具
 
@@ -8,6 +8,7 @@
 ## 介绍
 
 GPU Tasker是一款GPU任务调度工具，适用于GPU机群或单机环境，科学地调度每一项任务，深度学习工作者的福音。
+本 Fork 版本在原版基础上，主要增加了钉钉机器人实时推送 GPU 状态的功能，方便团队协作与资源监控。
 
 **警告：不建议将本工具用于实验室抢占GPU，这将会使你的同学或师兄盯上你（狗头）**
 
@@ -20,7 +21,7 @@ GPU Tasker是一款GPU任务调度工具，适用于GPU机群或单机环境，�
 安装django、django-simpleui
 
 ```shell
-pip install django django-simpleui
+pip install django django-simpleui chinese_calendar
 ```
 
 ### 部署GPU Tasker
@@ -202,6 +203,33 @@ SERVER_EMAIL = EMAIL_HOST_USER
 
 ![user_email](.assets/user_email.png)
 
+
+## 钉钉群机器人通知 (新增功能)
+本功能可以定时将所有服务器的 GPU 实时使用状态推送到指定的钉钉群，方便团队成员了解资源情况。
+
+功能特点:
+- 按指定时间间隔（如30分钟）推送。
+- 可自定义工作时间段（如 8:20-11:50, 13:10-17:30），只在工作时间内推送。
+- 自动跳过中国的法定节假日和周末，避免不必要打扰。
+- 高亮显示空闲的 GPU，一目了然。
+
+#### 1. 获取钉钉机器人 Token 和 Secret
+在你的钉钉群中，通过【群设置】->【智能群助手】->【添加机器人】来添加一个“自定义”机器人。安全设置请选择“**签名 (Secret)**”，并记录下生成的 `Webhook 地址`中的 **`access_token`** 和 **`Secret`**。
+
+#### 2. 配置机器人信息
+打开项目中的 `dingding/dingding.py` 文件，在文件末尾找到实例化 `Messenger` 的代码块，填入你获取到的 Token 和 Secret。
+
+```python
+# 实例化类
+messager = Messenger(token="这里替换成你的access_token",
+                     secret="这里替换成你的Secret")
+```
+#### 3. (可选) 自定义推送规则
+同样在 dingding/dingding.py 文件中，你可以根据需要修改 Messenger 类的初始化参数：
+- self.time_range: 修改工作时间段。
+- self.time_interval: 修改推送的时间间隔（分钟）。
+- self.utilization_thred / self.memory_used_thred: 修改判断显卡是否空闲的阈值。
+
 ## 更新GPUTasker
 
 GPUTasker可能包含数据表的改动，更新后请务必更新数据表以及**重新启动main.py**。
@@ -230,6 +258,8 @@ python main.py
 ## 写在后面
 
 在一次急需跑一个程序却在实验室几十台服务器上找不到一块显卡时萌生了这个想法，花半天时间写了这个项目的第一版，在显卡空闲时“抢”显卡执行我的程序，当时就决定开源，造福像我一样抢不到显卡的人。使用过程中经过了几天的完善，逐渐变成了一个支持多用户的GPU的任务调度工具，也更希望任务可以被有序调度而不是所有人疯狂的抢，这也是项目未来的愿景。
+
+本版本在原项目基础上，增加了钉钉机器人通知等功能，初衷是为了更方便地让团队成员共享和监控GPU资源状态，提高协作效率。
 
 由于项目开发比较仓促，存在很多不完善的地方。如果在使用过程中有任何意见或建议，请提交issue或者pr。让我们共同完善这个新生的项目。
 
