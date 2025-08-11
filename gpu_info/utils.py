@@ -4,6 +4,7 @@ import json
 import logging
 
 from .models import GPUServer, GPUInfo
+from dingding.dingding import messager
 
 task_logger = logging.getLogger('django.task')
 
@@ -117,7 +118,11 @@ class GPUInfoUpdater:
     def update_gpu_info(self):
         server_list = GPUServer.objects.all()
         for server in server_list:
+            # 1. 在 try 之前初始化 gpu_info_json 为 None
+            #    这样即使后面获取失败，它也有一个确定的值
+            gpu_info_json = None
             try:
+                # 这部分是原始的业务逻辑，保持不变
                 if server.hostname is None or server.hostname == '':
                     add_hostname(server, self.user, self.private_key_path)
                 gpu_info_json = get_gpu_status(server.ip, self.user, server.port, self.private_key_path)
@@ -147,6 +152,12 @@ class GPUInfoUpdater:
                         gpu_info.processes = '\n'.join(map(lambda x: json.dumps(x), gpu['processes']))
                         gpu_info.save()
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, RuntimeError):
+                # 这部分也是原始的错误处理逻辑，保持不变
                 task_logger.error('Update ' + server.ip + ' failed')
                 server.valid = False
                 server.save()
+            finally:
+                # 2. 在 finally 块中调用钉钉机器人
+                #    - 如果 try 成功，gpu_info_json 含有数据，发送GPU状态
+                #    - 如果 except 触发，gpu_info_json 为 None，发送“连接失败”
+                messager.send_md(gpu_info_json, server.ip
